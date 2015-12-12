@@ -1,0 +1,21 @@
+auth_server:
+  port: 6123
+  https: true
+  serverDomain: "auth.example.com"
+  domains: "example.com"
+
+cookie:
+  secret: "veryGoodAndVerySecret"
+
+google_oauth2:
+  client_id: "getThisFromGoogle"
+  secret: "youShouldGetThisFromGoogleAsWellAlsoKeepItSecret"
+  callback: "https://auth.example.com/auth/google/callback"
+
+allowed_email:
+  - foo@example.com
+  - bar@example.com
+
+routing:
+  webapp.example.com: http://127.0.0.1:31337
+
