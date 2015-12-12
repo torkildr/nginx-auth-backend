@@ -1,0 +1,18 @@
+{
+    "name": "nginx-auth-backend",
+    "description": "Authentication backend for Nginx virtual hosts",
+    "version": "1.0.0",
+    "author": {
+        "name": "Torkild Retvedt"
+    },
+    "main": "server.js",
+    "dependencies": {
+        "express": "~4.13.0",
+        "express-session": "~1.12.1",
+        "vhost": "~3.0.2",
+        "passport": "~0.3.2",
+        "passport-google-oauth": "~0.2.0",
+        "js-yaml" : "~3.4.6"
+    }
+}
+
