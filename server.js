@@ -1,17 +1,16 @@
 var express = require("express");
 var session = require("express-session");
 var vhost = require("vhost");
-
-var passport = require("passport");
-var GoogleStrategy = require("passport-google-oauth").OAuth2Strategy;
-
 var yaml = require("js-yaml");
+var auth = require("./googleAuth.js");
+
 var config = yaml.safeLoad(require("fs").readFileSync("config.yml"));
 
-console.log(config);
-
-var port = config.auth_server.port;
 var server = express();
+var backend = express();
+var proxy = express();
+
+config.backend.url = ((config.backend.https)?"https":"http")+"://"+config.backend.serverDomain;
 
 server.use(session({
     secret: config.cookie.secret,
@@ -19,42 +18,22 @@ server.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: config.auth_server.https,
-        domain: "." + config.auth_server.domains,
+        secure: config.backend.https,
+        domain: "." + config.backend.domains,
         path: "/",
         expires: new Date(Date.now() + (3600000 * 24 * 30))
     }
 }));
 
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.use(new GoogleStrategy({
-    clientID: config.google_oauth2.client_id,
-    clientSecret: config.google_oauth2.secret,
-    callbackURL: config.google_oauth2.callback
-  },
-  function(accessToken, refreshToken, profile, done) {
-    return done(null, profile);
-  }
-));
-
-var authCall = passport.authenticate('google', { scope: "email" });
-var authCallback = passport.authenticate('google', { failureRedirect: '/login' });
-
-var backend = express();
+server.use(auth.initialize(config, backend));
+server.use(auth.session());
 
 backend.use(express.static(__dirname + "/public"));
 
-backend.get("/login", function(req, res) {
+backend.get("/login", function(req, res, next) {
     req.session.origin = "/";
-    authCall(req, res);
-});
+    next();
+}, auth.authenticate);
 
 backend.get("/status", function(req, res) {
     res.send(req.session.email);
@@ -65,63 +44,62 @@ backend.get("/logout", function(req, res) {
     res.redirect("/");
 });
 
-backend.get("/auth/google/callback", authCallback, function(req, res) {
-    var origin = req.session.origin;
-    req.session.origin = null;
-
-    console.log("authentication successful");
-    console.log("redirecting to " + origin);
-    
-    req.session.email = req.session.passport.user.emails[0].value
-    res.redirect(origin);
+backend.use(function(req, res) {
+    res.sendStatus(200);
 });
 
-server.use(passport.initialize());
-server.use(passport.session());
+// this is called when user is authenticated
+auth.authenticated = function(req, res, email) {
+    console.log(req.get("x-forwarded-for") + ": authenticated as " + email);
 
-var webapp = express();
-
-var isAuthorized = function(email) {
-    return config.allowed_email.indexOf(email) != -1;
+    req.session.email = email;
+    res.redirect(req.session.origin);
 };
 
-webapp.use(function(req, res, next) {
+var isAuthorized = function(email) {
+    return ;
+};
+
+// setup proxy, check if user has session, if not, authenticate
+proxy.use(function(req, res, next) {
+    var proxiedUrl = req.get("x-forwarded-proto") + "://" + req.get("host") + req.originalUrl;
 
     if (req.session.email) {
-        var route = config.routing[req.headers.host];
+        var route = config.routing[req.get("host")];
 
+        // unknown route / origin
         if (route === undefined) {
-            // fix, redirect to https/auth stuff
-            res.redirect("/routeError");
+            console.log(req.get("x-forwarded-for") + ": could not route to " + req.get("host"));
+            res.redirect(config.backend.url + "/routeError");
             return;
         }
 
-        // authorize
-        if (!isAuthorized(req.session.email)) {
-            res.redirect("/unauthorized");
+        // unauthorized user
+        if (config.allowed_email.indexOf(req.session.email) == -1) {
+            console.log(req.get("x-forwarded-for") + ": " + req.session.email + " not authorized for " + req.get("host"));
+            res.redirect(config.backend.url + "/unauthorized");
             return;
         }
 
-        var url = route + req.originalUrl;
-
-        console.log("bypassing auth -> " + url);
+        // at this point, the user is authenticated and authorized
+        console.log(req.get("x-forwarded-for") + " - " + proxiedUrl);
 
         res.setHeader("X-Remote-User", req.session.email);
-        res.setHeader("X-Reproxy-URL", url);
+        res.setHeader("X-Reproxy-URL", route + req.originalUrl);
         res.setHeader("X-Accel-Redirect", "/reproxy");
         res.send();
     } else {
-        console.log("authing");
-        var proto = req.headers["x-forwarded-proto"];
-        var fullUrl = proto + '://' + req.get('host') + req.originalUrl;
-        req.session.origin = fullUrl;
-        authCall(req, res, next);
+        console.log(req.get("x-forwarded-for") + ": authenticating user");
+
+        req.session.origin = proxiedUrl;
+        next();
     }
-});
+}, auth.authenticate);
 
-server.use(vhost(config.auth_server.serverDomain, backend));
-server.use(vhost("*." + config.auth_server.domains, webapp));
+// set up vhosts, auth backend for auth domain, proxy for everything else
+server.use(vhost(config.backend.serverDomain, backend));
+server.use(vhost("*." + config.backend.domains, proxy));
 
-console.log("server listening on port " + port);
-server.listen(port);
+console.log("server listening on port " + config.backend.port);
+server.listen(config.backend.port);
 

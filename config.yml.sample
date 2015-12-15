@@ -1,4 +1,4 @@
-auth_server:
+backend:
   port: 6123
   https: true
   serverDomain: "auth.example.com"
@@ -10,7 +10,6 @@ cookie:
 google_oauth2:
   client_id: "getThisFromGoogle"
   secret: "youShouldGetThisFromGoogleAsWellAlsoKeepItSecret"
-  callback: "https://auth.example.com/auth/google/callback"
 
 allowed_email:
   - foo@example.com
