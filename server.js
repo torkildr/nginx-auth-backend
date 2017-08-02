@@ -82,7 +82,7 @@ proxy.use(function(req, res, next) {
         }
 
         // at this point, the user is authenticated and authorized
-        console.log(req.get("x-forwarded-for") + " - " + proxiedUrl);
+        console.log(req.get("x-forwarded-for") + " - " + req.session.email + " - " + req.method + " " + proxiedUrl);
 
         res.setHeader("X-Remote-User", req.session.email);
         res.setHeader("X-Reproxy-URL", route + req.originalUrl);
