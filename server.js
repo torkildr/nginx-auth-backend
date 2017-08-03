@@ -2,6 +2,7 @@ var express = require("express");
 var session = require("express-session");
 var vhost = require("vhost");
 var yaml = require("js-yaml");
+
 var auth = require("./googleAuth.js");
 
 var config = yaml.safeLoad(require("fs").readFileSync("config.yml"));
@@ -84,9 +85,10 @@ proxy.use(function(req, res, next) {
         // at this point, the user is authenticated and authorized
         console.log(req.get("x-forwarded-for") + " - " + req.session.email + " - " + req.method + " " + proxiedUrl);
 
-        res.setHeader("X-Remote-User", req.session.email);
-        res.setHeader("X-Reproxy-URL", route + req.originalUrl);
-        res.setHeader("X-Accel-Redirect", "/reproxy");
+        res.set("X-Remote-User", req.session.email);
+        res.set("X-Reproxy-URL", route + req.originalUrl);
+        res.set("X-Reproxy-Method", req.method);
+        res.set("X-Accel-Redirect", "/reproxy");
         res.send();
     } else {
         console.log(req.get("x-forwarded-for") + ": authenticating user");
