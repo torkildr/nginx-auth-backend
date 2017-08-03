@@ -101,5 +101,5 @@ server.use(vhost(config.backend.serverDomain, backend));
 server.use(vhost("*." + config.backend.domains, proxy));
 
 console.log("server listening on port " + config.backend.port);
-server.listen(config.backend.port);
+server.listen(config.backend.port, "127.0.0.1");
 

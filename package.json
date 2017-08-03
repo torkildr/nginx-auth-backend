@@ -12,7 +12,6 @@
         "vhost": "~3.0.2",
         "passport": "~0.3.2",
         "passport-google-oauth": "~0.2.0",
-        "js-yaml" : "~3.4.6"
+        "js-yaml": "~3.4.6"
     }
 }
-
