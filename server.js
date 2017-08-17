@@ -57,10 +57,6 @@ auth.authenticated = function(req, res, email) {
     res.redirect(req.session.origin);
 };
 
-var isAuthorized = function(email) {
-    return ;
-};
-
 // setup proxy, check if user has session, if not, authenticate
 proxy.use(function(req, res, next) {
     var proxiedUrl = req.get("x-forwarded-proto") + "://" + req.get("host") + req.originalUrl;
@@ -91,8 +87,7 @@ proxy.use(function(req, res, next) {
         res.set("X-Accel-Redirect", "/reproxy");
         res.send();
     } else {
-        console.log(req.get("x-forwarded-for") + ": authenticating user");
-
+        console.log(req.get("x-forwarded-for") + ": auth required - " + req.method + " " + proxiedUrl);
         req.session.origin = proxiedUrl;
         next();
     }
