@@ -1,5 +1,6 @@
 var express = require("express");
 var session = require("express-session");
+var fileStore = require("session-file-store")(session);
 var vhost = require("vhost");
 var yaml = require("js-yaml");
 
@@ -15,6 +16,7 @@ config.backend.url = ((config.backend.https)?"https":"http")+"://"+config.backen
 
 server.use(session({
     secret: config.cookie.secret,
+    store: new fileStore,
     proxy: true,
     resave: false,
     saveUninitialized: true,
@@ -22,7 +24,7 @@ server.use(session({
         secure: config.backend.https,
         domain: "." + config.backend.domains,
         path: "/",
-        expires: new Date(Date.now() + (3600000 * 24 * 30))
+        expires: new Date(Date.now() + (3600000 * 24 * 90))
     }
 }));
 
