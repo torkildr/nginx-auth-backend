@@ -58,7 +58,7 @@ This is a simple way to make sure that you don't forget to put authentication on
 
 ## Example docker compose configuration
 
-```yaml
+```YAML
 auth-backend:
   restart: always
   image: torkildr/nginx-auth-backend
@@ -88,6 +88,20 @@ auth-proxy:
     - LETSENCRYPT_HOST=auth.example.com,foo.example.com
     - LETSENCRYPT_EMAIL=mail@example.com
     - AUTH_BACKEND=http://auth-backend
+```
+
+## Example config.yaml
+
+```YAML
+cookie:
+  secret: "cookie_secret_here"
+
+google_oauth2:
+  client_id: "clientid_here"
+  secret: "secrethere"
+
+allowed_email:
+  - example@example.org
 ```
 
 # About
