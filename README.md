@@ -9,6 +9,7 @@ In theory, there shouldn't be too much stopping you from running this directly a
 
 # Authentication Flow
 
+```
                      Nginx Auth Proxy    Nginx Auth Backend    Foo-app    Google Authentication
 
                              |                     |              |                  |
@@ -36,6 +37,7 @@ GET https://foo.example.com  |                     |              |             
                              | +--------------------------------> |                  |
                              |                     |              |                  |
                              +                     +              +                  +
+```
 
 ## Unauthenticated calls
 
