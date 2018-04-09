@@ -6,13 +6,17 @@
         "name": "Torkild Retvedt"
     },
     "main": "server.js",
+    "license": "MIT",
+    "repository": "https://github.com/torkildr/nginx-auth-backend",
     "dependencies": {
-        "express": "^4.15.4",
-        "express-session": "^1.15.5",
-        "js-yaml": "^3.9.1",
+        "express": "^4.16.3",
+        "express-session": "^1.15.6",
+        "js-yaml": "^3.11.0",
+        "morgan": "^1.9.0",
         "passport": "^0.4.0",
+        "passport-google-auth": "^1.0.2",
         "passport-google-oauth": "^1.0.0",
-        "session-file-store": "^1.1.2",
+        "session-file-store": "^1.2.0",
         "vhost": "^3.0.2"
     }
 }

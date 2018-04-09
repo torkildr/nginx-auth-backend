@@ -1,28 +1,54 @@
-var express = require("express");
-var session = require("express-session");
-var fileStore = require("session-file-store")(session);
-var vhost = require("vhost");
-var yaml = require("js-yaml");
+const express = require("express");
+const session = require("express-session");
+const fileStore = require("session-file-store")(session);
+const vhost = require("vhost");
+const yaml = require("js-yaml");
+const morgan = require('morgan');
 
-var auth = require("./googleAuth.js");
+const auth = require("./googleAuth.js");
 
-var config = yaml.safeLoad(require("fs").readFileSync("config.yml"));
+const allVariables = [
+  'AUTH_CONFIG',
+  'AUTH_DOMAIN_ROOT',
+  'AUTH_DOMAIN_BACKEND',
+  'AUTH_DOMAIN_MAP',
+].map((env) => {
+  if (!process.env[env]) {
+    console.error(`variable ${env} is not defined`);
+    return false;
+  }
+  return true;
+});
 
-var server = express();
-var backend = express();
-var proxy = express();
+if (!allVariables.every(x => x)) {
+  process.exit(-1);
+}
 
-config.backend.url = ((config.backend.https)?"https":"http")+"://"+config.backend.serverDomain;
+const config = yaml.safeLoad(require("fs").readFileSync(process.env.AUTH_CONFIG));
+config.backend = { url: `https://${process.env.AUTH_DOMAIN_BACKEND}` };
+
+config.routing = JSON.parse(process.env.AUTH_DOMAIN_MAP);
+console.log(`routing: ${JSON.stringify(config.routing, null, 2)}`);
+
+const server = express();
+const backend = express();
+const proxy = express();
+
+if (process.env.AUTH_DEBUG) {
+    server.use(morgan('combined :req[upgrade]'));
+}
 
 server.use(session({
     secret: config.cookie.secret,
-    store: new fileStore,
+    store: new fileStore({
+        path: '/sessions',
+    }),
     proxy: true,
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: config.backend.https,
-        domain: "." + config.backend.domains,
+        secure: true,
+        domain: "." + process.env.AUTH_DOMAIN_ROOT,
         path: "/",
         expires: new Date(Date.now() + (3600000 * 24 * 90))
     }
@@ -31,6 +57,7 @@ server.use(session({
 server.use(auth.initialize(config, backend));
 server.use(auth.session());
 
+// convenience endpoints
 backend.use(express.static(__dirname + "/public"));
 
 backend.get("/login", function(req, res, next) {
@@ -52,7 +79,7 @@ backend.use(function(req, res) {
 });
 
 // this is called when user is authenticated
-auth.authenticated = function(req, res, email) {
+auth.authenticated = (req, res, email) => {
     console.log(req.get("x-forwarded-for") + ": authenticated as " + email);
 
     req.session.email = email;
@@ -60,7 +87,7 @@ auth.authenticated = function(req, res, email) {
 };
 
 // setup proxy, check if user has session, if not, authenticate
-proxy.use(function(req, res, next) {
+proxy.use((req, res, next) => {
     var proxiedUrl = req.get("x-forwarded-proto") + "://" + req.get("host") + req.originalUrl;
 
     if (req.session.email) {
@@ -69,7 +96,7 @@ proxy.use(function(req, res, next) {
         // unknown route / origin
         if (route === undefined) {
             console.log(req.get("x-forwarded-for") + ": could not route to " + req.get("host"));
-            res.redirect(config.backend.url + "/routeError");
+            res.redirect(backendUrl + "/routeError");
             return;
         }
 
@@ -96,9 +123,9 @@ proxy.use(function(req, res, next) {
 }, auth.authenticate);
 
 // set up vhosts, auth backend for auth domain, proxy for everything else
-server.use(vhost(config.backend.serverDomain, backend));
-server.use(vhost("*." + config.backend.domains, proxy));
+server.use(vhost(process.env.AUTH_DOMAIN_BACKEND, backend));
+server.use(vhost("*." + process.env.AUTH_DOMAIN_ROOT, proxy));
 
-console.log("server listening on port " + config.backend.port);
-server.listen(config.backend.port, "127.0.0.1");
+console.log("server listening on port 80");
+server.listen(80);
 

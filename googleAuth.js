@@ -23,15 +23,13 @@ passport.deserializeUser(function(user, done) {
   done(null, user);
 });
 
-var authCallback = 
-
 exports.authenticate = passport.authenticate("google", { scope: "email" });
-exports.authenticated = function() { };
+exports.authenticated = () => {};
 
 exports.initialize = function(config, backend) {
     passport.use(createStrategy(config));
 
-    backend.get(callbackUrl, passport.authenticate("google", { failureRedirect: "/" }), function(req, res) {
+    backend.get(callbackUrl, passport.authenticate("google", { failureRedirect: "/error" }), function(req, res) {
         var googleEmail = req.session.passport.user.emails[0].value;
         exports.authenticated(req, res, googleEmail);
     });
