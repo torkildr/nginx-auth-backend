@@ -21,12 +21,15 @@ document.addEventListener("DOMContentLoaded", () => {
     user.innerHTML = '';
 
     appendElement(user, 'h2', 'Logged in');
+
+    const expires = moment(info.expires).fromNow()
+    appendElement(user, 'span', `Expires ${expires}`);
+
     const photo = appendElement(user, 'img', null);
     photo.setAttribute('src', info.photo);
 
     appendElement(user, 'span', `Email: ${info.email}`);
     appendElement(user, 'span', `Name: ${info.name}`);
-    appendElement(user, 'span', `Expires: ${info.expires}`);
 
     createLink('/logout', 'Log out')
   };
