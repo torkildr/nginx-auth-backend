@@ -1,0 +1,28 @@
+body {
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+h1 {
+  display: inline-block;
+  border-bottom: 3px solid gray;
+  font-size: 1.3em;
+}
+
+h2 {
+  font-size: 1.15em;
+}
+
+#links {
+  margin-top: 1em;
+}
+
+#user span {
+  display: block;
+}
+
+#user img {
+  min-height: 50px;
+  min-width: 50px;
+  margin-bottom: 1em;
+}
+
