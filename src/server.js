@@ -14,7 +14,7 @@ const server = express();
 const backend = express();
 const proxy = express();
 
-server.use(morgan(':req[x-forwarded-for] [:date[clf]] :res[x-remote-user] :req[host] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
+server.use(morgan(':req[x-forwarded-for] [:date[clf]] :res[x-authenticated-user] :req[host] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 server.use(session({
   secret: config.cookie.secret,
   store: new fileStore({
