@@ -71,6 +71,7 @@ proxy.use((req, res, next) => {
     res.set('X-Authenticated-User', req.session.email);
     res.set('X-Reproxy-URL', route + req.originalUrl);
     res.set('X-Reproxy-Method', req.method);
+    res.set('X-Forwarded-Host', req.get('host'));
     res.set('X-Accel-Redirect', '/reproxy');
     res.send();
   } else {
