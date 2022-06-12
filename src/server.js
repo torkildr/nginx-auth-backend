@@ -3,6 +3,8 @@ const session = require('express-session');
 const fileStore = require('session-file-store')(session);
 const morgan = require('morgan');
 const vhost = require('vhost');
+const basicAuth = require('basic-auth');
+const tsscmp = require('tsscmp');
 
 const auth = require('./googleAuth.js');
 const authFrontend = require('./authFrontend.js');
@@ -50,7 +52,18 @@ proxy.use((req, res, next) => {
   const proxiedUrl = req.get('x-forwarded-proto') + '://' + req.get('host') + req.originalUrl;
   const authLog = msg => console.log(req.get('x-forwarded-for') + ': ' + msg);
 
-  if (req.session.email) {
+  if (!req.session.email && !req.session.user) {
+    const auth = basicAuth(req);
+    if (auth) {
+      const user = config.allowed_basic.find(x => x.user === auth.name);
+      if (user && tsscmp(auth.pass, user.password)) {
+        // authenticated with basic auth
+        req.session.user = user.user;
+      }
+    }
+  }
+  
+  if (req.session.email || req.session.user) {
     const route = config.routing[req.get('host')];
 
     // unknown route / origin
@@ -61,14 +74,16 @@ proxy.use((req, res, next) => {
     }
 
     // unauthorized user
-    if (config.allowed_email.indexOf(req.session.email) == -1) {
-      authLog(req.session.email + ' not authorized for ' + req.get('host'));
-      res.redirect(config.backend.url + '/unauthorized');
-      return;
+    if (!req.session.user) {
+      if (config.allowed_email.indexOf(req.session.email) == -1) {
+        authLog(req.session.email + ' not authorized for ' + req.get('host'));
+        res.redirect(config.backend.url + '/unauthorized');
+        return;
+      }
     }
 
     // at this point, the user is authenticated and authorized
-    res.set('X-Authenticated-User', req.session.email);
+    res.set('X-Authenticated-User', req.session.email || req.session.user);
     res.set('X-Reproxy-URL', route + req.originalUrl);
     res.set('X-Reproxy-Method', req.method);
     res.set('X-Forwarded-Host', req.get('host'));
