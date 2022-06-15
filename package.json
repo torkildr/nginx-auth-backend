@@ -15,7 +15,6 @@
         "js-yaml": "^3.11.0",
         "morgan": "^1.9.0",
         "passport": "^0.4.0",
-        "passport-google-auth": "^1.0.2",
         "passport-google-oauth": "^1.0.0",
         "session-file-store": "^1.2.0",
         "tsscmp": "^1.0.6",
